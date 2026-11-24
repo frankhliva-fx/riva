@@ -61,10 +61,10 @@ export function createRuntime(helpers: Record<string, (...args: unknown[]) => un
                     parts.push(body(childScope(scope, bind, value[index], {
                         index,
                         key: index,
-                        first: index === 0,
-                        last: index === total - 1,
-                        odd: index % 2 === 1,
-                        even: index % 2 === 0,
+                        isFirst: index === 0,
+                        isLast: index === total - 1,
+                        isOdd: index % 2 === 1,
+                        isEven: index % 2 === 0,
                     }, keyBind)));
                 }
             } else if (isPlainObject(value)) {
@@ -75,10 +75,10 @@ export function createRuntime(helpers: Record<string, (...args: unknown[]) => un
                     parts.push(body(childScope(scope, bind, value[key], {
                         index,
                         key,
-                        first: index === 0,
-                        last: index === total - 1,
-                        odd: index % 2 === 1,
-                        even: index % 2 === 0,
+                        isFirst: index === 0,
+                        isLast: index === total - 1,
+                        isOdd: index % 2 === 1,
+                        isEven: index % 2 === 0,
                     }, keyBind)));
                 }
             }
@@ -124,15 +124,15 @@ export function createRuntime(helpers: Record<string, (...args: unknown[]) => un
 type IteratorMeta = {
     index: number
     key: string | number
-    first: boolean
-    last: boolean
-    odd: boolean
-    even: boolean
+    isFirst: boolean
+    isLast: boolean
+    isOdd: boolean
+    isEven: boolean
 };
 
 const builtinFilters: Record<string, (...args: unknown[]) => unknown> = {
     escape: (value) => escapeHtml(stringify(value)),
-    noescape: (value) => raw(value),
+    noEscape: (value) => raw(value),
     trim: (value) => stringify(value).trim(),
     toUpper: (value, locale) => localeString(value).toLocaleUpperCase(localeArg(locale)),
     toLower: (value, locale) => localeString(value).toLocaleLowerCase(localeArg(locale)),

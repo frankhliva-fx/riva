@@ -32,7 +32,7 @@ Everything outside `{...}` tags is treated as plain text and copied as-is. Stand
 {$Shop.Company}             <!-- Resolves longest matching key first, then walks properties -->
 ```
 
-* **`html` mode (default):** Escapes output automatically unless you use `{!...}` or pipe through `noescape`.
+* **`html` mode (default):** Escapes output automatically unless you use `{!...}` or pipe through `noEscape`.
 * **`text` mode:** Never escapes anything.
 
 ### Variables (`let`)
@@ -62,10 +62,10 @@ Iterates over both arrays and plain objects:
 **Loop metadata variables:**
 * `$item:index` — 0-based iteration index
 * `$item:key` — array index or object key
-* `$item:first` — true on the first iteration
-* `$item:last` — true on the last iteration
-* `$item:odd` — true when `$item:index` is odd
-* `$item:even` — true when `$item:index` is even
+* `$item:isFirst` — true on the first iteration
+* `$item:isLast` — true on the last iteration
+* `$item:isOdd` — true when `$item:index` is odd
+* `$item:isEven` — true when `$item:index` is even
 
 **Numeric ranges (both ends inclusive):**
 
@@ -132,7 +132,7 @@ Pass values through filters using `|>`. The left-hand value is always passed as 
 | Helper | Description |
 | --- | --- |
 | `escape` | HTML-escape the value |
-| `noescape` | Mark the value as raw so auto-escape is skipped |
+| `noEscape` | Mark the value as raw so auto-escape is skipped |
 | `trim` | Trim whitespace |
 | `toUpper` | Uppercase (`toLocaleUpperCase`, optional locale argument) |
 | `toLower` | Lowercase (`toLocaleLowerCase`, optional locale argument) |

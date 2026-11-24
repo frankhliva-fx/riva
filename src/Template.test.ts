@@ -18,10 +18,10 @@ describe('Template', () => {
         assert.equal(view.render({ name: '<b>' }), '&lt;b&gt;');
     });
 
-    it('supports raw print and noescape', () => {
+    it('supports raw print and noEscape', () => {
         const raw = Template.compile('{!$html}', { mode: 'html' });
         assert.equal(raw.render({ html: '<b>x</b>' }), '<b>x</b>');
-        const pipe = Template.compile('{$html |> noescape}', { mode: 'html' });
+        const pipe = Template.compile('{$html |> noEscape}', { mode: 'html' });
         assert.equal(pipe.render({ html: '<i>' }), '<i>');
     });
 
@@ -45,6 +45,14 @@ describe('Template', () => {
             view.render({ products: { a: { name: 'A' }, b: { name: 'B' } } }),
             '0:a:A;1:b:B;',
         );
+    });
+
+    it('exposes isFirst, isLast, isOdd and isEven', () => {
+        const view = Template.compile(
+            '{for $item in $items}{$item:isFirst}{$item:isLast}{$item:isOdd}{$item:isEven};{/for}',
+            { mode: 'text' },
+        );
+        assert.equal(view.render({ items: ['a', 'b'] }), 'truefalsefalsetrue;falsetruetruefalse;');
     });
 
     it('counts inclusive ranges with to and downto', () => {
