@@ -1,7 +1,7 @@
-import type { TemplateMode } from './Ast.ts';
-import { parseTemplate } from './Parser.ts';
-import { createRuntime, type Runtime } from './Runtime.ts';
-import { compileNodes } from './TemplateCompiler.ts';
+import type { TemplateMode } from './Ast.js';
+import { parseTemplate } from './Parser.js';
+import { createRuntime, type Runtime } from './Runtime.js';
+import { compileNodes } from './TemplateCompiler.js';
 
 export type TemplateOptions = {
     mode?: TemplateMode

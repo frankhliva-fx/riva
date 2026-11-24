@@ -1,4 +1,4 @@
-# RivaJS (`riva`)
+# RivaJS (`@kingmakersas/riva`)
 
 Lightweight, expression-oriented template engine that compiles templates into clean JavaScript functions returning a `string`. 
 
@@ -7,7 +7,7 @@ Lightweight, expression-oriented template engine that compiles templates into cl
 ## Quick Start
 
 ```ts
-import { Template } from 'riva'
+import { Template } from '@kingmakersas/riva'
 
 const view = Template.compile('<h1>Hello {$name |> trim |> toUpper}!</h1>', {
   mode: 'html' // 'html' (default, auto-escapes) or 'text'

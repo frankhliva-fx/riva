@@ -1,4 +1,4 @@
-import type { BinaryOp, Expr } from './Ast.ts';
+import type { BinaryOp, Expr } from './Ast.js';
 
 export function parseExpression(source: string): Expr {
     const parser = new ExpressionParser(source.trim());

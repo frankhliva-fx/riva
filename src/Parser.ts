@@ -1,5 +1,5 @@
-import type { AstNode } from './Ast.ts';
-import { parseExpression } from './Expression.ts';
+import type { AstNode } from './Ast.js';
+import { parseExpression } from './Expression.js';
 
 export function parseTemplate(source: string): AstNode[] {
     return new TemplateParser(source).parseBlock();

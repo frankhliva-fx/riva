@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { Template } from './Template.ts';
+import { Template } from './Template.js';
 
 describe('Template', () => {
     it('prints variables and leaves let silent', () => {

@@ -1,6 +1,6 @@
-export type { AstNode, Expr, TemplateMode } from './Ast.ts';
-export { parseExpression, compileExpression } from './Expression.ts';
-export { parseTemplate } from './Parser.ts';
-export { createRuntime, escapeHtml, resolvePath, stringify, raw } from './Runtime.ts';
-export { Template, type TemplateOptions } from './Template.ts';
-export { compileNodes } from './TemplateCompiler.ts';
+export type { AstNode, Expr, TemplateMode } from './Ast.js';
+export { parseExpression, compileExpression } from './Expression.js';
+export { parseTemplate } from './Parser.js';
+export { createRuntime, escapeHtml, resolvePath, stringify, raw } from './Runtime.js';
+export { Template, type TemplateOptions } from './Template.js';
+export { compileNodes } from './TemplateCompiler.js';

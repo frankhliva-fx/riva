@@ -1,5 +1,5 @@
-import type { AstNode, ForNode, ForRangeNode, IfNode, LetNode, MatchNode, TemplateMode } from './Ast.ts';
-import { compileExpression } from './Expression.ts';
+import type { AstNode, ForNode, ForRangeNode, IfNode, LetNode, MatchNode, TemplateMode } from './Ast.js';
+import { compileExpression } from './Expression.js';
 
 export function compileNodes(nodes: AstNode[], mode: TemplateMode): string {
     return `"use strict";

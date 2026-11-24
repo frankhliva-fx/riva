@@ -1,7 +1,7 @@
 export type RawValue = { __rivaRaw: true; value: unknown };
 
 export type Runtime = {
-    esc: (value: unknown) => string
+    esc: (value: string) => string
     print: (value: unknown, raw: boolean, mode: 'html' | 'text') => string
     resolve: (scope: Record<string, unknown>, parts: string[], meta?: string) => unknown
     map: (

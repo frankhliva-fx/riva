@@ -1,12 +1,44 @@
 {
-  "name": "riva",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@kingmakersas/riva",
+  "version": "0.1.0",
+  "description": "Lightweight, expression-oriented template engine that compiles templates into JavaScript functions.",
+  "license": "BSD-3-Clause",
+  "author": "Frank Hliva",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/frankhliva-fx/riva.git"
+  },
+  "bugs": {
+    "url": "https://github.com/frankhliva-fx/riva/issues"
+  },
+  "homepage": "https://github.com/frankhliva-fx/riva#readme",
+  "keywords": [
+    "template",
+    "template-engine",
+    "html"
+  ],
   "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run test && pnpm run build",
     "test": "tsx --test src/Template.test.ts",
     "typecheck": "tsc --noEmit"
   },
