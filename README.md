@@ -48,12 +48,12 @@ Bindings behave like `const` — they are block-scoped, immutable, and don't pro
 Iterates over both arrays and plain objects:
 
 ```latte
-{for $product in$products}
+{for $product in $products}
   <div>{$product:index}. {$product.name}</div>
 {/for}
 
 <!-- With explicit key -->
-{for $key, $product in$products}
+{for $key, $product in $products}
   <div>{$key}: {$product.name}</div>
 {/for}
 ```
