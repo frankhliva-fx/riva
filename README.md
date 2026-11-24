@@ -38,7 +38,8 @@ Everything outside `{...}` tags is treated as plain text and copied as-is. Stand
 ### Variables (`let`)
 
 ```latte
-{let $tax = 0.2} {let$total = $price * (1 +$tax)}
+{let $tax = 0.2}
+{let $total = $price * (1 + $tax)}
 ```
 
 Bindings behave like `const` — they are block-scoped, immutable, and don't produce any output on their own.
@@ -120,12 +121,16 @@ Pass values through filters using `|>`. The left-hand value is always passed as 
 
 | Helper | Description |
 | --- | --- |
-| `escape` / `noescape` | Force or skip HTML escaping |
-| `trim` | Trims whitespace |
-| `toUpper` / `toLower` | Case conversion (accepts optional locale argument) |
-| `sprintf` | Formats value (`%s`, `%d`), e.g. `$v |> sprintf "[%s]"` |
-| `length` | Returns length of string, array, or object keys |
-| `isArray` / `isObject` | Type checks (`Array.isArray` / plain object) |
+| `escape` | HTML-escape the value |
+| `noescape` | Mark the value as raw so auto-escape is skipped |
+| `trim` | Trim whitespace |
+| `toUpper` | Uppercase (`toLocaleUpperCase`, optional locale argument) |
+| `toLower` | Lowercase (`toLocaleLowerCase`, optional locale argument) |
+| `toSlug` | URL slug: lowercase, strip diacritics, turn other runs into `-` |
+| `sprintf` | Format the value (`%s`, `%d`), e.g. `$v |> sprintf "[%s]"` |
+| `length` | Length of a string, array, or object keys |
+| `isArray` | `Array.isArray` |
+| `isObject` | Plain object check |
 | `isNil` | True for `null` or `undefined` |
 
 ### Custom Helpers

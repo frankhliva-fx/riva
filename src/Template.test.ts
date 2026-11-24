@@ -107,6 +107,13 @@ describe('Template', () => {
         assert.equal(Template.compile('{$name |> toUpper}', { mode: 'text' }).render({ name: 'abc' }), 'ABC');
     });
 
+    it('builds a slug with toSlug', () => {
+        const view = Template.compile('{$title |> toSlug}', { mode: 'text' });
+        assert.equal(view.render({ title: '  Žltý kôň! ' }), 'zlty-kon');
+        assert.equal(view.render({ title: 'Hello, World' }), 'hello-world');
+        assert.equal(view.render({ title: 'Foo / Bar' }), 'foo-bar');
+    });
+
     it('keeps plain braces in css text', () => {
         const view = Template.compile('body { color: red } Hello {$name}', { mode: 'text' });
         assert.equal(view.render({ name: 'X' }), 'body { color: red } Hello X');

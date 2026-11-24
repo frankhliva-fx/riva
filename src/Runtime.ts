@@ -136,6 +136,7 @@ const builtinFilters: Record<string, (...args: unknown[]) => unknown> = {
     trim: (value) => stringify(value).trim(),
     toUpper: (value, locale) => localeString(value).toLocaleUpperCase(localeArg(locale)),
     toLower: (value, locale) => localeString(value).toLocaleLowerCase(localeArg(locale)),
+    toSlug: (value) => slugify(value),
     length: (value) => {
         if (typeof value === 'string' || Array.isArray(value)) return value.length;
         if (isPlainObject(value)) return Object.keys(value).length;
@@ -173,6 +174,20 @@ function childScope(
         bindings[keyBind] = meta.key;
     }
     return Object.assign(Object.create(null), scope, bindings);
+}
+
+function slugify(value: unknown): string {
+    const folded = stringify(value)
+        .normalize('NFD')
+        .replace(/\p{M}/gu, '')
+        .toLowerCase()
+        .replace(/đ/g, 'd')
+        .replace(/ł/g, 'l')
+        .replace(/ø/g, 'o')
+        .replace(/æ/g, 'ae')
+        .replace(/œ/g, 'oe')
+        .replace(/ß/g, 'ss');
+    return folded.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
 function localeString(value: unknown): string {
