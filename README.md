@@ -80,7 +80,7 @@ Iterates over both arrays and plain objects:
 ```
 *(If a range runs the wrong way, e.g., `5 to 1`, it simply renders nothing.)*
 
-### Conditions (`if` / `match`)
+### Conditions (`if`)
 
 ```latte
 {if $item |> isArray}
@@ -99,8 +99,9 @@ Iterates over both arrays and plain objects:
 ```
 *(Note: `else if` works as an alias for `elif`.)*
 
-**Pattern matching (`match`):**
-Simple switch without fall-through using `==` comparison. Renders an empty string if nothing matches.
+### Matching (`match`)
+
+Simple switch without fall-through. Comparison uses `==`. If nothing matches, the result is an empty string.
 
 ```latte
 {match $status}
