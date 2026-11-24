@@ -1,161 +1,145 @@
-# RivaJS template language
+# RivaJS (`riva`)
 
-RivaJS (`riva`) compiles templates to JavaScript functions that render a **string**. It is for control flow, expressions, and pipes.
+Lightweight, expression-oriented template engine that compiles templates into clean JavaScript functions returning a `string`. 
 
-## Mental model
+---
 
-| Form | Kind | Output |
-| --- | --- | --- |
-| `{$expr}` | expression | appends value to the result string |
-| `{!$expr}` | expression (raw) | appends value without HTML escape |
-| `{let $name = expr}` | statement (`const`) | no output; immutable binding in a nested scope |
-| `{if}…{/if}` | statement | no output by itself |
-| `{for}…{/for}` | statement | no output by itself |
-| `{match}…{/match}` | statement | no output by itself |
-
-Compiled output is expression-oriented (`return` + `+` / ternaries / `map`), not a mutable string buffer.
-
-## Syntax
-
-### Text
-
-Everything outside markup tags is literal text and is copied to the output as-is.
-
-Plain braces (for example CSS `body { color: red }`) stay literal. Only `{…}` forms listed below are markup.
-
-### Print
-
-```
-{$name}
-{$product.name}
-{$Shop.Company}
-{$name |> trim |> toUpper}
-{$name |> sprintf "[%s]"}
-{!$html}
-```
-
-- `{$…}` in `html` mode HTML-escapes the final value (unless piped through `noescape` or written as `{!…}`).
-- `text` mode never escapes.
-- Dotted paths resolve the longest matching data key first (`Shop.Company`), then walk properties.
-
-### Let
-
-```
-{let $name = 5}
-{let $age = $name + 10}
-```
-
-Does not print. Compiles like `const` — binding is visible in the rest of the current block and does not reassign an outer binding.
-
-### For
-
-```
-{for $product in $products}
-  <div>{$product:index}. {$product:key}: {$product.name}</div>
-{/for}
-```
-
-```
-{for $myKey, $product in $products}
-  <div>{$product:index}. {$myKey}: {$product.name}</div>
-{/for}
-```
-
-- Iterates arrays and plain objects.
-- `$item:index` — 0-based index
-- `$item:key` — array index or object key
-- `$item:first` / `$item:last` / `$item:odd` / `$item:even` — booleans
-- `{for $key, $item in $items}` binds that same key to `$key`
-
-Counted loop, both ends inclusive. `to` steps up by 1. `downto` steps down by 1. A range that runs the wrong way produces nothing.
-
-```
-{for $i = 1 to 3}
-  {$i}
-{/for}
-```
-
-```
-{for $i = $from downto 1}
-  {$i}
-{/for}
-```
-
-### If
-
-```
-{if isArray($item)}
-  …
-{elif $item <> nil}
-  …
-{else}
-  …
-{/if}
-```
-
-`else if` is an alias of `elif`.
-
-### Match
-
-Simple switch (no fall-through). Values may be strings or any expression; comparison uses `==`.
-
-```
-{match $aaa}
-{with "abc"}A{/with}
-{with "efg"}B{/with}
-{/match}
-```
-
-If nothing matches, the result is an empty string.
-
-### Comparisons
-
-| Op | Meaning |
-| --- | --- |
-| `==` | equal |
-| `<>` / `!=` | not equal |
-| `<` `<=` `>` `>=` | numeric / relational |
-
-Literals: `true`, `false`, `nil` (alias `null`). `isNil($x)` is true for `null` and `undefined`.
-
-### Pipe
-
-```
-{$value |> filter}
-{$value |> filter arg}
-{$value |> filter "arg"}
-```
-
-Left value is passed as the **first** argument of the filter. Extra args follow. Pipe works in any expression (`print`, `let`, `if`, `for`).
-
-## Built-in filters / helpers
-
-| Name | Role |
-| --- | --- |
-| `escape` | HTML-escape |
-| `noescape` | mark value as raw (skip auto-escape) |
-| `trim` | trim string |
-| `toUpper` | `toLocaleUpperCase` (optional locale arg) |
-| `toLower` | `toLocaleLowerCase` (optional locale arg) |
-| `sprintf` | pipe form `$v |> sprintf "[%s]"` → format with value first; supports `%s`, `%d` |
-| `length` | string/array/object length |
-| `isArray` | `Array.isArray` |
-| `isObject` | plain object check |
-| `isNil` | `null` or `undefined` |
-
-Custom helpers: `Template.compile(source, { helpers: { money: (v) => … } })`.
-
-## Compile API
+## Quick Start
 
 ```ts
 import { Template } from 'riva'
 
-const view = Template.compile(source, { mode: 'html' })
-const html: string = view.render({ products, Shop: { Company: 'Acme' } })
+const view = Template.compile('<h1>Hello {$name |> trim |> toUpper}!</h1>', {
+  mode: 'html' // 'html' (default, auto-escapes) or 'text'
+})
+
+const html = view.render({ name: '  Frank  ' })
+// => "<h1>Hello FRANK!</h1>"
 ```
 
-`render` always returns `string`.
+---
+
+## Syntax Overview
+
+Everything outside `{...}` tags is treated as plain text and copied as-is. Standard curly braces (like CSS `body { color: red }`) are ignored and stay untouched.
+
+### Printing & Escaping
+
+```latte
+{$name}                     <!-- Auto-escaped in 'html' mode -->
+{!$rawHtml}                 <!-- Raw output (no HTML escaping) -->
+{$product.name}             <!-- Property access -->
+{$Shop.Company}             <!-- Resolves longest matching key first, then walks properties -->
+```
+
+* **`html` mode (default):** Escapes output automatically unless you use `{!...}` or pipe through `noescape`.
+* **`text` mode:** Never escapes anything.
+
+### Variables (`let`)
+
+```latte
+{let $tax = 0.2} {let$total = $price * (1 +$tax)}
+```
+
+Bindings behave like `const` — they are block-scoped, immutable, and don't produce any output on their own.
+
+### Loops (`for`)
+
+Iterates over both arrays and plain objects:
+
+```latte
+{for $product in$products}
+  <div>{$product:index}. {$product.name}</div>
+{/for}
+
+<!-- With explicit key -->
+{for $key, $product in$products}
+  <div>{$key}: {$product.name}</div>
+{/for}
+```
+
+**Loop metadata variables:**
+* `$item:index` — 0-based iteration index
+* `$item:key` — array index or object key
+* `$item:first` / `$item:last` / `$item:odd` / `$item:even` — booleans
+
+**Numeric ranges (both ends inclusive):**
+
+```latte
+{for $i = 1 to 3} {$i}
+{/for}
+
+{for $i = $start downto 1} {$i}
+{/for}
+```
+*(If a range runs the wrong way, e.g., `5 to 1`, it simply renders nothing.)*
+
+### Conditions (`if` / `match`)
+
+```latte
+{if isArray($item)}
+  ...
+{elif $item <> nil}
+  ...
+{else}
+  ...
+{/if}
+```
+*(Note: `else if` works as an alias for `elif`.)*
+
+**Pattern matching (`match`):**
+Simple switch without fall-through using `==` comparison. Renders an empty string if nothing matches.
+
+```latte
+{match $status}
+  {with "active"}Online{/with}
+  {with "banned"}Blocked{/with}
+{/match}
+```
+
+### Operators & Literals
+
+* **Equality:** `==`, `<>` or `!=`
+* **Relational:** `<`, `<=`, `>`, `>=`
+* **Literals:** `true`, `false`, `nil` (alias `null`)
+
+---
+
+## Pipes & Filters
+
+Pass values through filters using `|>`. The left-hand value is always passed as the **first** argument to the filter. Pipes work inside any expression (`print`, `let`, `if`, `for`).
+
+```latte
+{$name |> trim |> toUpper}
+{$count |> sprintf "[%d items]"}
+```
+
+### Built-in Helpers
+
+| Helper | Description |
+| --- | --- |
+| `escape` / `noescape` | Force or skip HTML escaping |
+| `trim` | Trims whitespace |
+| `toUpper` / `toLower` | Case conversion (accepts optional locale argument) |
+| `sprintf` | Formats value (`%s`, `%d`), e.g. `$v |> sprintf "[%s]"` |
+| `length` | Returns length of string, array, or object keys |
+| `isArray` / `isObject` | Type checks (`Array.isArray` / plain object) |
+| `isNil` | True for `null` or `undefined` |
+
+### Custom Helpers
+
+Register your own functions during compilation:
+
+```ts
+const view = Template.compile('{$price |> money "EUR"}', {
+  helpers: {
+    money: (val, currency) => `${val.toFixed(2)} ${currency}`
+  }
+})
+```
+
+---
 
 ## Security
 
-Expressions are parsed into an AST and compiled by Riva. Template authors cannot inject arbitrary JavaScript; only the supported expression language runs.
+Templates are parsed into an AST and compiled strictly from the supported expression subset — template authors cannot inject or execute arbitrary JavaScript.
