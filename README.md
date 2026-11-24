@@ -50,7 +50,7 @@ Iterates over both arrays and plain objects:
 
 ```latte
 {for $product in $products}
-  <div>{$product:index}. {$product.name}</div>
+  <div>{$product:index}. {$product:key} {$product.name}</div>
 {/for}
 
 <!-- With explicit key -->
@@ -62,7 +62,10 @@ Iterates over both arrays and plain objects:
 **Loop metadata variables:**
 * `$item:index` — 0-based iteration index
 * `$item:key` — array index or object key
-* `$item:first` / `$item:last` / `$item:odd` / `$item:even` — booleans
+* `$item:first` — true on the first iteration
+* `$item:last` — true on the last iteration
+* `$item:odd` — true when `$item:index` is odd
+* `$item:even` — true when `$item:index` is even
 
 **Numeric ranges (both ends inclusive):**
 
@@ -78,6 +81,12 @@ Iterates over both arrays and plain objects:
 *(If a range runs the wrong way, e.g., `5 to 1`, it simply renders nothing.)*
 
 ### Conditions (`if` / `match`)
+
+```latte
+{if $item |> isArray}
+  ...
+{/if}
+```
 
 ```latte
 {if isArray($item)}
