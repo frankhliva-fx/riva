@@ -66,10 +66,12 @@ Iterates over both arrays and plain objects:
 **Numeric ranges (both ends inclusive):**
 
 ```latte
-{for $i = 1 to 3} {$i}
+{for $i = 1 to 3}
+  <div>{$i}.</div>
 {/for}
 
-{for $i = $start downto 1} {$i}
+{for $i = $start downto 1}
+  <div>{$i}.</div>
 {/for}
 ```
 *(If a range runs the wrong way, e.g., `5 to 1`, it simply renders nothing.)*
