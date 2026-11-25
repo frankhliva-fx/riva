@@ -19,6 +19,9 @@ export type Runtime = {
         scope: Record<string, unknown>,
         body: (scope: Record<string, unknown>) => string,
     ) => string
+    collect: (value: unknown, body: (item: unknown) => unknown) => unknown[]
+    fold: (value: unknown, start: unknown, body: (acc: unknown, item: unknown) => unknown) => unknown
+    rangeList: (from: unknown, to: unknown, down: boolean) => number[]
     call: (name: string, args: unknown[]) => unknown
     pipe: (value: unknown, name: string, args: unknown[]) => unknown
     add: (left: unknown, right: unknown) => unknown
@@ -99,13 +102,34 @@ export function createRuntime(helpers: Record<string, (...args: unknown[]) => un
             }
             return parts.join('');
         },
+        collect(value, body) {
+            const results: unknown[] = [];
+            for (const item of listItems(value)) results.push(body(item));
+            return results;
+        },
+        fold(value, start, body) {
+            let acc = start;
+            for (const item of listItems(value)) acc = body(acc, item);
+            return acc;
+        },
+        rangeList(from, to, down) {
+            const start = toInt(from);
+            const end = toInt(to);
+            const values: number[] = [];
+            if (down) {
+                for (let value = start; value >= end; value -= 1) values.push(value);
+            } else {
+                for (let value = start; value <= end; value += 1) values.push(value);
+            }
+            return values;
+        },
         call(name, args) {
             const fn = filters[name];
             if (!fn) throw new Error(`Unknown helper "${name}"`);
             return fn(...args);
         },
         pipe(value, name, args) {
-            return this.call(name, [value, ...args]);
+            return this.call(name, [...args, value]);
         },
         add(left, right) {
             if (typeof left === 'number' && typeof right === 'number') {
@@ -134,8 +158,8 @@ const builtinFilters: Record<string, (...args: unknown[]) => unknown> = {
     escape: (value) => escapeHtml(stringify(value)),
     noEscape: (value) => raw(value),
     trim: (value) => stringify(value).trim(),
-    toUpper: (value, locale) => localeString(value).toLocaleUpperCase(localeArg(locale)),
-    toLower: (value, locale) => localeString(value).toLocaleLowerCase(localeArg(locale)),
+    toUpper: (...args) => localeCase(args, (text, locale) => text.toLocaleUpperCase(locale)),
+    toLower: (...args) => localeCase(args, (text, locale) => text.toLocaleLowerCase(locale)),
     toSlug: (value) => slugify(value),
     length: (value) => {
         if (typeof value === 'string' || Array.isArray(value)) return value.length;
@@ -145,7 +169,7 @@ const builtinFilters: Record<string, (...args: unknown[]) => unknown> = {
     isArray: (value) => Array.isArray(value),
     isObject: (value) => isPlainObject(value),
     isNil: (value) => value === null || value === undefined,
-    sprintf: (value, format = '%s', ...rest) => sprintf(stringify(format), [value, ...rest]),
+    sprintf: (format = '%s', ...values) => sprintf(stringify(format), values),
 };
 
 function bindValue(scope: Record<string, unknown>, name: string, value: unknown): Record<string, unknown> {
@@ -188,6 +212,17 @@ function slugify(value: unknown): string {
         .replace(/œ/g, 'oe')
         .replace(/ß/g, 'ss');
     return folded.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function localeCase(
+    args: unknown[],
+    convert: (text: string, locale?: string | string[]) => string,
+): string {
+    if (args.length <= 1) {
+        return convert(localeString(args[0]), undefined);
+    }
+    const value = args[args.length - 1];
+    return convert(localeString(value), localeArg(args[0]));
 }
 
 function localeString(value: unknown): string {
@@ -244,6 +279,12 @@ export function resolvePath(scope: Record<string, unknown>, parts: string[]): un
         }
     }
     return undefined;
+}
+
+function listItems(value: unknown): unknown[] {
+    if (Array.isArray(value)) return value;
+    if (isPlainObject(value)) return Object.keys(value).map((key) => value[key]);
+    return [];
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

@@ -7,7 +7,10 @@ export type AstNode =
     | IfNode
     | ForNode
     | ForRangeNode
-    | MatchNode;
+    | MatchNode
+    | FuncNode
+    | SubNode
+    | InvokeNode;
 
 export type TextNode = {
     kind: 'text'
@@ -49,7 +52,7 @@ export type ForRangeNode = {
 };
 
 export type MatchArm = {
-    value: Expr
+    value: Expr | null
     body: AstNode[]
 };
 
@@ -57,6 +60,32 @@ export type MatchNode = {
     kind: 'match'
     expression: Expr
     arms: MatchArm[]
+};
+
+export type FuncLet = {
+    name: string
+    expression: Expr
+};
+
+export type FuncNode = {
+    kind: 'func'
+    name: string
+    params: string[]
+    lets: FuncLet[]
+    body: Expr
+};
+
+export type SubNode = {
+    kind: 'sub'
+    name: string
+    params: string[]
+    body: AstNode[]
+};
+
+export type InvokeNode = {
+    kind: 'invoke'
+    name: string
+    args: Expr[]
 };
 
 export type Expr =
@@ -68,7 +97,16 @@ export type Expr =
     | { kind: 'call'; name: string; args: Expr[] }
     | { kind: 'unary'; op: '!' | '-'; argument: Expr }
     | { kind: 'binary'; op: BinaryOp; left: Expr; right: Expr }
-    | { kind: 'pipe'; value: Expr; name: string; args: Expr[] };
+    | { kind: 'pipe'; value: Expr; name: string; args: Expr[] }
+    | { kind: 'ifValue'; condition: Expr; then: Expr; else: Expr }
+    | { kind: 'matchValue'; expression: Expr; arms: ValueArm[] }
+    | { kind: 'forValue'; name: string; expression: Expr; body: Expr; start?: Expr; acc?: string }
+    | { kind: 'rangeValue'; name: string; from: Expr; to: Expr; down: boolean; body: Expr; start?: Expr; acc?: string };
+
+export type ValueArm = {
+    pattern: Expr | null
+    body: Expr
+};
 
 export type BinaryOp =
     | '+'

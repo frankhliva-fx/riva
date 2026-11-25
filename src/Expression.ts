@@ -1,5 +1,12 @@
 import type { BinaryOp, Expr } from './Ast.js';
 
+export type CompileEnv = {
+    funcs: ReadonlySet<string>
+    subs: ReadonlySet<string>
+};
+
+const emptyEnv: CompileEnv = { funcs: new Set(), subs: new Set() };
+
 export function parseExpression(source: string): Expr {
     const parser = new ExpressionParser(source.trim());
     const expr = parser.parsePipe();
@@ -7,7 +14,7 @@ export function parseExpression(source: string): Expr {
     return expr;
 }
 
-export function compileExpression(expr: Expr, scopeVar = '__scope'): string {
+export function compileExpression(expr: Expr, scopeVar = '__scope', env: CompileEnv = emptyEnv): string {
     switch (expr.kind) {
         case 'number':
             return String(expr.value);
@@ -23,17 +30,32 @@ export function compileExpression(expr: Expr, scopeVar = '__scope'): string {
             return `__rt.resolve(${scopeVar}, ${parts}, ${meta})`;
         }
         case 'call': {
-            const args = expr.args.map((item) => compileExpression(item, scopeVar)).join(', ');
+            const args = expr.args.map((item) => compileExpression(item, scopeVar, env)).join(', ');
+            if (env.funcs.has(expr.name) || env.subs.has(expr.name)) {
+                return `__funcs[${JSON.stringify(expr.name)}](${args}, ${scopeVar})`;
+            }
             return `__rt.call(${JSON.stringify(expr.name)}, [${args}])`;
         }
+        case 'ifValue': {
+            const condition = `__rt.isTruthy(${compileExpression(expr.condition, scopeVar, env)})`;
+            const thenExpr = compileExpression(expr.then, scopeVar, env);
+            const elseExpr = compileExpression(expr.else, scopeVar, env);
+            return `(${condition} ? (${thenExpr}) : (${elseExpr}))`;
+        }
+        case 'matchValue':
+            return compileMatchValue(expr, scopeVar, env);
+        case 'forValue':
+            return compileForValue(expr, scopeVar, env);
+        case 'rangeValue':
+            return compileRangeValue(expr, scopeVar, env);
         case 'unary':
             if (expr.op === '!') {
-                return `(!__rt.isTruthy(${compileExpression(expr.argument, scopeVar)}))`;
+                return `(!__rt.isTruthy(${compileExpression(expr.argument, scopeVar, env)}))`;
             }
-            return `(-Number(${compileExpression(expr.argument, scopeVar)}))`;
+            return `(-Number(${compileExpression(expr.argument, scopeVar, env)}))`;
         case 'binary': {
-            const left = compileExpression(expr.left, scopeVar);
-            const right = compileExpression(expr.right, scopeVar);
+            const left = compileExpression(expr.left, scopeVar, env);
+            const right = compileExpression(expr.right, scopeVar, env);
             if (expr.op === '&&') {
                 return `(__rt.isTruthy(${left}) ? ${right} : ${left})`;
             }
@@ -46,11 +68,74 @@ export function compileExpression(expr: Expr, scopeVar = '__scope'): string {
             return `(${left} ${expr.op} ${right})`;
         }
         case 'pipe': {
-            const value = compileExpression(expr.value, scopeVar);
-            const args = expr.args.map((item) => compileExpression(item, scopeVar)).join(', ');
-            return `__rt.pipe(${value}, ${JSON.stringify(expr.name)}, [${args}])`;
+            const value = compileExpression(expr.value, scopeVar, env);
+            const args = expr.args.map((item) => compileExpression(item, scopeVar, env));
+            if (env.funcs.has(expr.name) || env.subs.has(expr.name)) {
+                const all = [...args, value].join(', ');
+                return `__funcs[${JSON.stringify(expr.name)}](${all}, ${scopeVar})`;
+            }
+            return `__rt.pipe(${value}, ${JSON.stringify(expr.name)}, [${args.join(', ')}])`;
         }
     }
+}
+
+let matchSerial = 0;
+
+function compileMatchValue(expr: Extract<Expr, { kind: 'matchValue' }>, scopeVar: string, env: CompileEnv): string {
+    matchSerial += 1;
+    const subject = `__match${matchSerial}`;
+    let expression = 'undefined';
+    for (let index = expr.arms.length - 1; index >= 0; index -= 1) {
+        const arm = expr.arms[index]!;
+        const body = compileExpression(arm.body, scopeVar, env);
+        if (arm.pattern === null) {
+            expression = `(${body})`;
+        } else {
+            const pattern = compileExpression(arm.pattern, scopeVar, env);
+            expression = `((${subject} == ${pattern}) ? (${body}) : ${expression})`;
+        }
+    }
+    const value = compileExpression(expr.expression, scopeVar, env);
+    return `(() => { const ${subject} = ${value}; return ${expression}; })()`;
+}
+
+function compileForValue(expr: Extract<Expr, { kind: 'forValue' }>, scopeVar: string, env: CompileEnv): string {
+    const list = compileExpression(expr.expression, scopeVar, env);
+    return compileLoop(list, expr.name, expr.body, expr.start, expr.acc, scopeVar, env);
+}
+
+function compileRangeValue(expr: Extract<Expr, { kind: 'rangeValue' }>, scopeVar: string, env: CompileEnv): string {
+    const from = compileExpression(expr.from, scopeVar, env);
+    const to = compileExpression(expr.to, scopeVar, env);
+    const list = `__rt.rangeList(${from}, ${to}, ${expr.down ? 'true' : 'false'})`;
+    return compileLoop(list, expr.name, expr.body, expr.start, expr.acc, scopeVar, env);
+}
+
+function compileLoop(
+    list: string,
+    name: string,
+    body: Expr,
+    start: Expr | undefined,
+    acc: string | undefined,
+    scopeVar: string,
+    env: CompileEnv,
+): string {
+    const next = `${scopeVar}_`;
+    if (start !== undefined && acc !== undefined) {
+        const fields = loopFields(acc, name);
+        const compiled = compileExpression(body, next, env);
+        const initial = compileExpression(start, scopeVar, env);
+        return `__rt.fold(${list}, ${initial}, (__acc, __item) => { const ${next} = Object.assign(Object.create(null), ${scopeVar}, { ${fields} }); return ${compiled}; })`;
+    }
+    const compiled = compileExpression(body, next, env);
+    return `__rt.collect(${list}, (__item) => { const ${next} = Object.assign(Object.create(null), ${scopeVar}, { ${JSON.stringify(name)}: __item }); return ${compiled}; })`;
+}
+
+function loopFields(acc: string, name: string): string {
+    if (acc === name) {
+        return `${JSON.stringify(name)}: __item`;
+    }
+    return `${JSON.stringify(acc)}: __acc, ${JSON.stringify(name)}: __item`;
 }
 
 class ExpressionParser {

@@ -113,6 +113,7 @@ describe('Template', () => {
     it('uses locale case helpers', () => {
         assert.equal(Template.compile('{$name |> toLower}', { mode: 'text' }).render({ name: 'ABC' }), 'abc');
         assert.equal(Template.compile('{$name |> toUpper}', { mode: 'text' }).render({ name: 'abc' }), 'ABC');
+        assert.equal(Template.compile('{$name |> toUpper "tr"}', { mode: 'text' }).render({ name: 'i' }), 'İ');
     });
 
     it('builds a slug with toSlug', () => {
@@ -127,6 +128,65 @@ describe('Template', () => {
         assert.equal(view.render({ name: 'X' }), 'body { color: red } Hello X');
     });
 
+    it('calls a func with lets, if, match and for', () => {
+        const math = Template.compile(
+            '{func total($price, $qty) -> $price * $qty}{$total($price, $qty)}',
+            { mode: 'text' },
+        );
+        assert.equal(math.render({ price: 4, qty: 3 }), '12');
+        const piped = Template.compile(
+            '{func total($qty, $price) -> $price * 10 + $qty}{$price |> total $qty}',
+            { mode: 'text' },
+        );
+        assert.equal(piped.render({ price: 4, qty: 3 }), '43');
+        const label = Template.compile(
+            `{func label($price, $qty) ->
+                let $x = $qty * $qty
+                if $x > 10 then $price * $x else $price
+            }{label($price, $qty)}`,
+            { mode: 'text' },
+        );
+        assert.equal(label.render({ price: 3, qty: 4 }), '48');
+        assert.equal(label.render({ price: 3, qty: 2 }), '3');
+        const status = Template.compile(
+            `{func name($status) ->
+                match $status
+                with "active" -> "Online"
+                with "banned" -> "Blocked"
+                with _ -> "off"
+            }{name($status)}`,
+            { mode: 'text' },
+        );
+        assert.equal(status.render({ status: 'active' }), 'Online');
+        assert.equal(status.render({ status: 'nope' }), 'off');
+        const sum = Template.compile(
+            `{func total($items) ->
+                for $item in $items start 0 with $sum -> $sum + $item.price
+            }{total($items)}`,
+            { mode: 'text' },
+        );
+        assert.equal(sum.render({ items: [{ price: 2 }, { price: 5 }] }), '7');
+        const names = Template.compile(
+            `{func names($items) -> for $item in $items -> $item.name}{names($items)}`,
+            { mode: 'text' },
+        );
+        assert.equal(names.render({ items: [{ name: 'A' }, { name: 'B' }] }), '["A","B"]');
+    });
+
+    it('renders a sub with the template language', () => {
+        const view = Template.compile(
+            '{sub card($title)}<b>{$title}</b>{/sub}{card($title)}',
+            { mode: 'html' },
+        );
+        assert.equal(view.render({ title: '<i>' }), '<b>&lt;i&gt;</b>');
+        const pick = Template.compile(
+            '{sub pick($n)}{if $n > 1}many{else}one{/if}{/sub}{pick($n)}',
+            { mode: 'text' },
+        );
+        assert.equal(pick.render({ n: 2 }), 'many');
+        assert.equal(pick.render({ n: 1 }), 'one');
+    });
+
     it('supports match with string arms', () => {
         const view = Template.compile(
             '{match $aaa}{with "abc"}A{/with}{with "efg"}B{/with}{/match}',
@@ -135,5 +195,11 @@ describe('Template', () => {
         assert.equal(view.render({ aaa: 'abc' }), 'A');
         assert.equal(view.render({ aaa: 'efg' }), 'B');
         assert.equal(view.render({ aaa: 'zzz' }), '');
+        const fallback = Template.compile(
+            '{match $aaa}{with "abc"}A{/with}{with _}Other{/with}{/match}',
+            { mode: 'text' },
+        );
+        assert.equal(fallback.render({ aaa: 'abc' }), 'A');
+        assert.equal(fallback.render({ aaa: 'zzz' }), 'Other');
     });
 });

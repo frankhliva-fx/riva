@@ -101,14 +101,54 @@ Iterates over both arrays and plain objects:
 
 ### Matching (`match`)
 
-Simple switch without fall-through. Comparison uses `==`. If nothing matches, the result is an empty string.
+Simple switch without fall-through. Comparison uses `==`. `{with _}` matches anything else. Without it, the result is an empty string.
 
 ```latte
 {match $status}
   {with "active"}Online{/with}
   {with "banned"}Blocked{/with}
+  {with _}Off{/with}
 {/match}
 ```
+
+### Subtemplates (`sub`)
+
+A `sub` renders template text. `{if}`, `{for}`, and `{match}` inside it work as on the page. The result is inserted as-is, without a second escape.
+
+```latte
+{sub card($title, $price)}
+  <h2>{$title}</h2>
+  <p>{$price}</p>
+{/sub}
+
+{card($product.name, $product.price)}
+```
+
+### Functions (`func`)
+
+A `func` returns a value. The body has no curly braces: `let`, then one expression. `if`, `match`, and `for` are expressions too.
+
+```latte
+{func total($price, $qty) -> $price * $qty}
+
+{func label($price, $qty) ->
+  let $x = $qty * $qty
+  if $x > 10 then $price * $x else $price
+}
+
+{func name($status) ->
+  match $status
+  with "active" -> "Online"
+  with "banned" -> "Blocked"
+  with _ -> "Off"
+}
+
+{func sum($items) ->
+  for $item in $items start 0 with $sum -> $sum + $item.price
+}
+```
+
+`for $item in $items -> $item.name` returns an array. `start` / `with` folds one value. Call a func from `{let}`, `{if}`, or `{$total($price, $qty)}`. A pipe passes the left value as the last argument: `{$price |> total $qty}` is `total($qty, $price)`.
 
 ### Operators & Literals
 
@@ -120,7 +160,7 @@ Simple switch without fall-through. Comparison uses `==`. If nothing matches, th
 
 ## Pipes & Filters
 
-Pass values through filters using `|>`. The left-hand value is always passed as the **first** argument to the filter. Pipes work inside any expression (`print`, `let`, `if`, `for`).
+Pass values through filters using `|>`. The left-hand value is passed as the **last** argument, as in F#. That works for a built-in helper and for a `func`. Pipes work inside any expression (`print`, `let`, `if`, `for`).
 
 ```latte
 {$name |> trim |> toUpper}
@@ -134,10 +174,10 @@ Pass values through filters using `|>`. The left-hand value is always passed as 
 | `escape` | HTML-escape the value |
 | `noEscape` | Mark the value as raw so auto-escape is skipped |
 | `trim` | Trim whitespace |
-| `toUpper` | Uppercase (`toLocaleUpperCase`, optional locale argument) |
-| `toLower` | Lowercase (`toLocaleLowerCase`, optional locale argument) |
+| `toUpper` | Uppercase. Optional locale comes first: `$name |> toUpper "sk"` |
+| `toLower` | Lowercase. Optional locale comes first: `$name |> toLower "sk"` |
 | `toSlug` | URL slug: lowercase, strip diacritics, turn other runs into `-` |
-| `sprintf` | Format the value (`%s`, `%d`), e.g. `$v |> sprintf "[%s]"` |
+| `sprintf` | Format (`%s`, `%d`). The format is first: `$v |> sprintf "[%s]"` |
 | `length` | Length of a string, array, or object keys |
 | `isArray` | `Array.isArray` |
 | `isObject` | Plain object check |
@@ -150,7 +190,7 @@ Register your own functions during compilation:
 ```ts
 const view = Template.compile('{$price |> money "EUR"}', {
   helpers: {
-    money: (val, currency) => `${val.toFixed(2)} ${currency}`
+    money: (currency, value) => `${value.toFixed(2)} ${currency}`
   }
 })
 ```

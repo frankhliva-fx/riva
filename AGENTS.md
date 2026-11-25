@@ -6,7 +6,9 @@ Template language compiler. The public API is `Template` from `src/index.ts`. A 
 
 Loop meta variables are `$item:index`, `$item:key`, `$item:isFirst`, `$item:isLast`, `$item:isOdd`, and `$item:isEven`. `isOdd` and `isEven` are based on the 0-based index.
 
-Built-in helpers live in `builtinFilters` in `Runtime.ts`. In a template they work as a call (`isArray($item)`) and as a pipe (`$item |> isArray`). A pipe passes the left-hand value as the first argument.
+Built-in helpers live in `builtinFilters` in `Runtime.ts`. In a template they work as a call (`isArray($item)`) and as a pipe (`$item |> isArray`). A pipe passes the left-hand value as the last argument, as in F#.
+
+`{func name($a) -> ...}` returns a value. Its body has no curly braces: `let`, `if ... then ... else`, `match` / `with` / `with _`, and `for`. `{sub name($a)}...{/sub}` renders template text with the normal tags. Template `{match}` uses `{with …}` and `{with _}` for the default arm.
 
 ## Indentation
 
