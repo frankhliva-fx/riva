@@ -1,6 +1,6 @@
 {
   "name": "@kingmakersas/riva",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Lightweight, expression-oriented template engine that compiles templates into JavaScript functions.",
   "license": "BSD-3-Clause",
   "author": "Frank Hliva",
